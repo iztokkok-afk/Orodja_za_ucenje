@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poštevanko se učimo!</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1b2d;
+    --panel: #162236;
+    --card: #1e3050;
+    --border: #2a4060;
+    --accent1: #ff6b6b;
+    --accent2: #ffd93d;
+    --accent3: #6bcb77;
+    --accent4: #4d96ff;
+    --text: #e8f0fe;
+    --muted: #7a8fa6;
+    --matched-bg: #173d26;
+    --matched-border: #4ecb6a;
+    --matched-text: #9dedb0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; width: 100%;
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg); color: var(--text);
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 5% 12%, rgba(255,255,255,0.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 22% 68%, rgba(255,255,255,0.18) 0%, transparent 100%),
+      radial-gradient(1px 1px at 48% 22%, rgba(255,255,255,0.22) 0%, transparent 100%),
+      radial-gradient(1px 1px at 74% 55%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 91% 8%,  rgba(255,255,255,0.18) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 88%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 33% 90%, rgba(255,255,255,0.15) 0%, transparent 100%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  #header {
+    position: fixed; top: 0; left: 0; right: 0; height: 56px;
+    background: rgba(15,27,45,0.97);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; z-index: 100;
+  }
+  .logo {
+    font-family: 'Fredoka One', cursive; font-size: 1.35rem;
+    background: linear-gradient(135deg, var(--accent2), var(--accent1));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hstats { display: flex; gap: 20px; align-items: center; }
+  .hstat { font-size: 0.82rem; color: var(--muted); }
+  .hstat strong { color: var(--accent2); font-size: 1rem; }
+  #stopwatch { font-family: 'Fredoka One', cursive; font-size: 1.2rem; color: var(--accent3); min-width: 52px; text-align: right; }
+  .btn-sm {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 20px; padding: 6px 16px;
+    font-family: 'Fredoka One', cursive; font-size: 0.85rem;
+    color: var(--text); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-sm:hover { border-color: var(--accent4); color: var(--accent4); }
+
+  /* ── HINT BAR ── */
+  #hint-bar {
+    position: fixed; top: 56px; left: 0; right: 0; height: 28px;
+    background: rgba(77,150,255,0.08); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; color: var(--muted); z-index: 99;
+    transition: background 0.3s;
+  }
+  #hint-bar.selected { background: rgba(77,150,255,0.18); color: var(--accent4); }
+  #hint-text { font-weight: 700; }
+
+  /* ── PROGRESS BAR ── */
+  #progress-wrap { position: fixed; top: 84px; left: 0; right: 0; height: 4px; background: var(--border); z-index: 99; }
+  #progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent4), var(--accent3)); width: 0%; transition: width 0.4s ease; }
+
+  /* ── MAIN LAYOUT ── */
+  #main {
+    position: fixed; top: 88px; bottom: 0; left: 0; right: 0;
+    display: flex; z-index: 1;
+  }
+
+  .col {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 10px 8px 8px;
+    overflow: hidden;
+  }
+  .col-label {
+    font-family: 'Fredoka One', cursive; font-size: 0.88rem;
+    color: var(--muted); text-align: center; margin-bottom: 6px; flex-shrink: 0;
+  }
+  .col-divider {
+    width: 1px; background: var(--border); margin: 10px 0; flex-shrink: 0;
+    position: relative;
+  }
+  .col-divider::after {
+    content: '→'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg); padding: 6px 2px;
+    color: var(--muted); font-size: 0.75rem;
+  }
+
+  /* ── GRIDS ── */
+  .grid {
+    flex: 1; overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 5px;
+    align-content: start;
+  }
+  .grid::-webkit-scrollbar { width: 4px; }
+  .grid::-webkit-scrollbar-track { background: transparent; }
+  .grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── EQUATION TILES ── */
+  .eq-tile {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: 9px; padding: 7px 3px;
+    font-family: 'Fredoka One', cursive; font-size: 0.88rem;
+    color: var(--text); text-align: center;
+    cursor: pointer; user-select: none;
+    transition: border-color 0.12s, background 0.12s, transform 0.12s;
+  }
+  .eq-tile:hover:not(.matched) { border-color: var(--accent4); transform: scale(1.06); }
+  .eq-tile.selected {
+    background: rgba(77,150,255,0.22); border-color: var(--accent4);
+    color: var(--accent4); transform: scale(1.08);
+    box-shadow: 0 0 14px rgba(77,150,255,0.4);
+  }
+  .eq-tile.matched {
+    background: var(--matched-bg); border-color: var(--matched-border);
+    color: var(--matched-text); cursor: default;
+    box-shadow: inset 0 0 6px rgba(78,203,106,0.15);
+  }
+  .eq-tile.wrong-flash { animation: shake 0.4s ease; border-color: var(--accent1) !important; background: rgba(255,107,107,0.18) !important; }
+
+  /* ── RESULT TILES ── */
+  .res-tile {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: 9px; padding: 7px 3px;
+    font-family: 'Fredoka One', cursive; font-size: 0.95rem;
+    color: var(--text); text-align: center;
+    cursor: pointer; user-select: none;
+    transition: border-color 0.12s, background 0.12s, transform 0.12s;
+  }
+  .res-tile:hover:not(.matched) { border-color: var(--accent3); transform: scale(1.06); }
+  .res-tile.matched {
+    background: var(--matched-bg); border-color: var(--matched-border);
+    color: var(--matched-text); cursor: default;
+    box-shadow: inset 0 0 6px rgba(78,203,106,0.15);
+  }
+  .res-tile .placed-eq {
+    display: block; font-size: 0.5rem; font-family: 'Nunito', sans-serif;
+    font-weight: 700; color: rgba(157,237,176,0.65); margin-top: 1px; line-height: 1.2;
+  }
+  .res-tile.wrong-flash { animation: shake 0.4s ease; border-color: var(--accent1) !important; background: rgba(255,107,107,0.18) !important; }
+  .res-tile.hint-glow:not(.matched) {
+    border-color: rgba(107,203,119,0.6);
+    background: rgba(107,203,119,0.07);
+  }
+
+  /* ── WIN OVERLAY ── */
+  #win-overlay {
+    position: fixed; inset: 0;
+    background: rgba(8,16,28,0.92);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500; opacity: 0; pointer-events: none; transition: opacity 0.4s;
+  }
+  #win-overlay.show { opacity: 1; pointer-events: all; }
+  .win-box {
+    background: var(--panel); border: 1.5px solid var(--accent2);
+    border-radius: 24px; padding: 40px 48px; text-align: center;
+    box-shadow: 0 0 60px rgba(255,217,61,0.25);
+    animation: floatIn 0.5s ease;
+  }
+  .win-emoji { font-size: 3.5rem; }
+  .win-title { font-family:'Fredoka One',cursive; font-size:2.2rem; color:var(--accent2); margin:10px 0 4px; }
+  .win-time  { font-size:3rem; font-family:'Fredoka One',cursive; color:var(--accent3); margin:6px 0 10px; }
+  .win-sub   { color:var(--muted); margin-bottom:20px; font-size:0.92rem; }
+  .win-stats { display:flex; gap:20px; justify-content:center; margin-bottom:24px; }
+  .win-stat  { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 22px; text-align:center; }
+  .win-stat-val { font-family:'Fredoka One',cursive; font-size:1.8rem; color:var(--accent2); }
+  .win-stat-lbl { font-size:0.7rem; color:var(--muted); margin-top:3px; }
+  .name-row { display:flex; gap:10px; margin-bottom:14px; }
+  .name-input {
+    flex:1; background:var(--card); border:2px solid var(--border);
+    border-radius:12px; padding:11px 16px; color:var(--text);
+    font-family:'Nunito',sans-serif; font-size:1rem; font-weight:700; outline:none;
+    transition:border-color 0.2s;
+  }
+  .name-input:focus { border-color:var(--accent4); }
+  .name-input::placeholder { color:var(--muted); font-weight:400; }
+  .btn-win {
+    border:none; border-radius:50px; padding:11px 26px;
+    font-family:'Fredoka One',cursive; font-size:1rem;
+    cursor:pointer; transition:transform 0.15s;
+  }
+  .btn-win:active { transform:scale(0.95); }
+  .btn-win.gold  { background:linear-gradient(135deg,var(--accent2),#e6a800); color:#0f1b2d; }
+  .btn-win.blue  { background:linear-gradient(135deg,var(--accent4),#2f6fd4); color:white; }
+  .btn-win.green { background:linear-gradient(135deg,var(--accent3),#3aa854); color:#0f1b2d; width:100%; padding:14px; font-size:1.1rem; margin-top:4px; }
+  .btn-win:disabled { opacity:0.5; pointer-events:none; }
+
+  /* ── LEADERBOARD ── */
+  #lb-overlay {
+    position:fixed; inset:0; background:rgba(8,16,28,0.95);
+    display:flex; align-items:center; justify-content:center;
+    z-index:600; opacity:0; pointer-events:none; transition:opacity 0.3s;
+  }
+  #lb-overlay.show { opacity:1; pointer-events:all; }
+  .lb-box {
+    background:var(--panel); border:1.5px solid var(--border);
+    border-radius:24px; padding:28px 32px; width:460px; max-height:85vh; overflow-y:auto;
+    animation:floatIn 0.4s ease;
+  }
+  .lb-title { font-family:'Fredoka One',cursive; font-size:1.5rem; color:var(--accent2); text-align:center; margin-bottom:4px; }
+  .lb-sub   { color:var(--muted); font-size:0.75rem; text-align:center; margin-bottom:14px; }
+  .lb-table { width:100%; border-collapse:collapse; font-size:0.85rem; margin-bottom:16px; }
+  .lb-table th { color:var(--muted); font-weight:700; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; font-size:0.72rem; text-transform:uppercase; }
+  .lb-table td { padding:7px 8px; border-bottom:1px solid rgba(42,64,96,0.5); font-weight:700; }
+  .lb-table tr:last-child td { border-bottom:none; }
+  .lb-table .rank-1 td { color:var(--accent2); }
+  .lb-table .rank-2 td { color:#c0c0c0; }
+  .lb-table .rank-3 td { color:#cd7f32; }
+  .lb-empty { color:var(--muted); text-align:center; padding:20px 0; }
+  .lb-new { display:inline-block; background:var(--accent3); color:#0f1b2d; border-radius:4px; font-size:0.6rem; font-weight:800; padding:1px 5px; margin-left:5px; }
+
+  @keyframes floatIn { from{transform:translateY(30px) scale(0.95);opacity:0} to{transform:translateY(0) scale(1);opacity:1} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo">🌟 Poštevanko se učimo!</div>
+  <div class="hstats">
+    <div class="hstat">✅ <strong id="h-correct">0</strong> / 81</div>
+    <div class="hstat">❌ <strong id="h-wrong">0</strong></div>
+    <div id="stopwatch">0:00</div>
+    <button class="btn-sm" onclick="restart()">🔄 Znova</button>
+    <button class="btn-sm" onclick="showLb()">🏆 Lestvica</button>
+    <div class="hstat">👁 <strong id="h-visits">0</strong></div>
+  </div>
+</div>
+
+<div id="hint-bar">
+  <span id="hint-text">Klikni enačbo na levi strani ←</span>
+</div>
+<div id="progress-wrap"><div id="progress-fill"></div></div>
+
+<div id="main">
+  <div class="col">
+    <div class="col-label">📦 Enačbe</div>
+    <div class="grid" id="eq-grid"></div>
+  </div>
+  <div class="col-divider"></div>
+  <div class="col">
+    <div class="col-label">🎯 Rezultati</div>
+    <div class="grid" id="res-grid"></div>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="win-overlay">
+  <div class="win-box">
+    <div class="win-emoji">🏆</div>
+    <div class="win-title">Bravo! Zmaga!</div>
+    <div class="win-time" id="win-time">0:00</div>
+    <div class="win-sub" id="win-sub"></div>
+    <div class="win-stats" id="win-stats"></div>
+    <div class="name-row">
+      <input class="name-input" id="name-input" type="text" placeholder="Vpiši ime..." maxlength="20" autocomplete="off">
+      <button class="btn-win gold" id="save-btn" onclick="saveScore()">💾 Shrani</button>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:8px;">
+      <button class="btn-win blue" onclick="showLb()">🏆 Lestvica</button>
+    </div>
+    <button class="btn-win green" onclick="restart()">Nova igra 🔄</button>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="lb-overlay" onclick="if(event.target===this)hideLb()">
+  <div class="lb-box">
+    <div class="lb-title">🏆 Lestvica — 30 dni</div>
+    <div class="lb-sub">Razvrščeno: manj napak → krajši čas</div>
+    <div id="lb-content"></div>
+    <button class="btn-win blue" style="width:100%;" onclick="hideLb()">Zapri</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const ALL_PAIRS = [];
+for (let a = 2; a <= 10; a++)
+  for (let b = 2; b <= 10; b++)
+    ALL_PAIRS.push({ a, b, result: a*b, label: `${a}×${b}`, id: `${a}x${b}` });
+
+const ALL_RESULTS = ALL_PAIRS.map(p => p.result).sort((a,b) => a-b);
+
+// ── AUDIO ──
+let actx = null;
+function ac() { if (!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+function tone(f,s,d,type='sine',vol=0.2) {
+  try {
+    const ctx=ac(),o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type=type; o.frequency.setValueAtTime(f,ctx.currentTime+s);
+    g.gain.setValueAtTime(0,ctx.currentTime+s);
+    g.gain.linearRampToValueAtTime(vol,ctx.currentTime+s+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+s+d);
+    o.start(ctx.currentTime+s); o.stop(ctx.currentTime+s+d+0.05);
+  } catch(e){}
+}
+const playOk  = () => { tone(523,0,0.08); tone(659,0.08,0.08); tone(784,0.16,0.14); };
+const playBad = () => { tone(220,0,0.06,'sawtooth',0.16); tone(185,0.07,0.11,'sawtooth',0.12); };
+const playWin = () => { [523,659,784,1047,1319].forEach((f,i) => tone(f,i*0.12,0.28)); };
+
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+// ── STATE ──
+let matched=0, wrongCount=0;
+let selectedEqEl=null;
+let swTimer=null, swElapsed=0, swActive=false, finalTime=0;
+let savedTs=null;
+
+const fmtTime = s => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
+
+function startSW() {
+  if (swActive) return; swActive=true;
+  const base=Date.now()-swElapsed*1000;
+  swTimer=setInterval(()=>{ swElapsed=Math.floor((Date.now()-base)/1000); document.getElementById('stopwatch').textContent=fmtTime(swElapsed); },500);
+}
+function stopSW()  { clearInterval(swTimer); swActive=false; finalTime=swElapsed; }
+function resetSW() { clearInterval(swTimer); swActive=false; swElapsed=0; finalTime=0; document.getElementById('stopwatch').textContent='0:00'; }
+
+function setHint(msg, active=false) {
+  const bar=document.getElementById('hint-bar');
+  document.getElementById('hint-text').textContent=msg;
+  bar.classList.toggle('selected', active);
+}
+
+// ── BUILD ──
+function buildGrids() {
+  const eqGrid=document.getElementById('eq-grid');
+  const resGrid=document.getElementById('res-grid');
+  eqGrid.innerHTML=''; resGrid.innerHTML='';
+
+  shuffle(ALL_PAIRS).forEach(p => {
+    const el=document.createElement('div');
+    el.className='eq-tile';
+    el.dataset.id=p.id;
+    el.dataset.result=p.result;
+    el.textContent=p.label;
+    el.addEventListener('click', () => tapEq(el));
+    eqGrid.appendChild(el);
+  });
+
+  ALL_RESULTS.forEach((r,i) => {
+    const el=document.createElement('div');
+    el.className='res-tile';
+    el.dataset.result=r;
+    el.dataset.idx=i;
+    el.innerHTML=`<span>${r}</span>`;
+    el.addEventListener('click', () => tapRes(el));
+    resGrid.appendChild(el);
+  });
+}
+
+// ── TAP EQUATION ──
+function tapEq(el) {
+  if (el.classList.contains('matched')) return;
+  if (!swActive) startSW();
+
+  // deselect if clicking same
+  if (selectedEqEl === el) {
+    el.classList.remove('selected');
+    selectedEqEl=null;
+    clearResHints();
+    setHint('Klikni enačbo na levi strani ←', false);
+    return;
+  }
+
+  // deselect previous
+  if (selectedEqEl) selectedEqEl.classList.remove('selected');
+  selectedEqEl=el;
+  el.classList.add('selected');
+
+  // hint glow on matching result tiles
+  clearResHints();
+  setHint(`Izbrana: ${el.textContent} = ?   Klikni rezultat na desni →`, true);
+}
+
+// ── TAP RESULT ──
+function tapRes(el) {
+  if (el.classList.contains('matched')) return;
+  if (!selectedEqEl) {
+    // nudge: nothing selected on left
+    setHint('Najprej klikni enačbo na levi ←', false);
+    return;
+  }
+
+  const eqResult  = parseInt(selectedEqEl.dataset.result);
+  const resResult = parseInt(el.dataset.result);
+
+  if (eqResult === resResult) {
+    // ✅ CORRECT
+    selectedEqEl.classList.remove('selected');
+    selectedEqEl.classList.add('matched');
+    el.classList.add('matched');
+    el.innerHTML=`<span>${resResult}</span><span class="placed-eq">${selectedEqEl.textContent}</span>`;
+    clearResHints();
+    selectedEqEl=null;
+    matched++;
+    document.getElementById('h-correct').textContent=matched;
+    document.getElementById('progress-fill').style.width=`${(matched/81)*100}%`;
+    setHint('Klikni enačbo na levi strani ←', false);
+    playOk();
+    if (matched===81) setTimeout(showWin, 400);
+  } else {
+    // ❌ WRONG
+    selectedEqEl.classList.add('wrong-flash');
+    el.classList.add('wrong-flash');
+    wrongCount++;
+    document.getElementById('h-wrong').textContent=wrongCount;
+    playBad();
+    setTimeout(()=>{
+      if (selectedEqEl) selectedEqEl.classList.remove('wrong-flash');
+      el.classList.remove('wrong-flash');
+    }, 450);
+  }
+}
+
+function clearResHints() {
+  document.querySelectorAll('.res-tile.hint-glow').forEach(e=>e.classList.remove('hint-glow'));
+}
+
+// ── WIN ──
+function showWin() {
+  stopSW(); playWin(); savedTs=null;
+  document.getElementById('win-time').textContent=fmtTime(finalTime);
+  const acc=Math.round((81/(81+wrongCount))*100);
+  document.getElementById('win-sub').textContent=wrongCount===0
+    ?'Vseh 81 enačb brez napake! Si genij! 🧠'
+    :'Vseh 81 enačb dokončanih';
+  document.getElementById('win-stats').innerHTML=`
+    <div class="win-stat"><div class="win-stat-val">${fmtTime(finalTime)}</div><div class="win-stat-lbl">⏱ Čas</div></div>
+    <div class="win-stat"><div class="win-stat-val" style="color:var(--accent1)">${wrongCount}</div><div class="win-stat-lbl">❌ Napake</div></div>
+    <div class="win-stat"><div class="win-stat-val" style="color:var(--accent3)">${acc}%</div><div class="win-stat-lbl">✅ Točnost</div></div>
+  `;
+  document.getElementById('name-input').value='';
+  const sb=document.getElementById('save-btn'); sb.disabled=false; sb.textContent='💾 Shrani';
+  document.getElementById('win-overlay').classList.add('show');
+}
+
+// ── LEADERBOARD ──
+const LB_KEY='postevanka_click_lb_v1';
+function loadLb() {
+  try { const r=localStorage.getItem(LB_KEY); if(!r) return []; return JSON.parse(r).filter(e=>e.ts>Date.now()-30*24*3600*1000); } catch{return [];}
+}
+function saveScore() {
+  const name=document.getElementById('name-input').value.trim()||'Anonimec';
+  savedTs=Date.now();
+  const e=loadLb();
+  e.push({name,time:finalTime,mistakes:wrongCount,ts:savedTs});
+  e.sort((a,b)=>a.mistakes!==b.mistakes?a.mistakes-b.mistakes:a.time-b.time);
+  localStorage.setItem(LB_KEY,JSON.stringify(e));
+  const sb=document.getElementById('save-btn'); sb.disabled=true; sb.textContent='✅ Shranjeno';
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function renderLb() {
+  const entries=loadLb();
+  const el=document.getElementById('lb-content');
+  if(!entries.length){el.innerHTML='<div class="lb-empty">Še ni rezultatov 🚀</div>';return;}
+  const m=['🥇','🥈','🥉'];
+  el.innerHTML=`<table class="lb-table"><thead><tr><th>#</th><th>Ime</th><th>⏱ Čas</th><th>❌ Napake</th></tr></thead><tbody>`+
+    entries.slice(0,10).map((e,i)=>{
+      const isNew=savedTs&&Math.abs(e.ts-savedTs)<5000;
+      return `<tr class="${i<3?'rank-'+(i+1):''}"><td>${m[i]||(i+1)+'.'}</td><td>${esc(e.name)}${isNew?'<span class="lb-new">NOV</span>':''}</td><td>${fmtTime(e.time)}</td><td>${e.mistakes}</td></tr>`;
+    }).join('')+`</tbody></table>`;
+}
+function showLb(){renderLb();document.getElementById('lb-overlay').classList.add('show');}
+function hideLb(){document.getElementById('lb-overlay').classList.remove('show');}
+
+// ── RESTART ──
+function restart() {
+  matched=0; wrongCount=0; selectedEqEl=null;
+  document.getElementById('h-correct').textContent=0;
+  document.getElementById('h-wrong').textContent=0;
+  document.getElementById('progress-fill').style.width='0%';
+  resetSW();
+  setHint('Klikni enačbo na levi strani ←', false);
+  document.getElementById('win-overlay').classList.remove('show');
+  // ── VISIT COUNTER ──
+(function(){
+  var VC='postevanka_visits_v1';
+  try {
+    var v=parseInt(localStorage.getItem(VC)||'0')+1;
+    localStorage.setItem(VC,v);
+    document.getElementById('h-visits').textContent=v;
+  } catch(e){}
+})();
+
+buildGrids();
+}
+
+buildGrids();
+</script>
+</body>
+</html>
